@@ -4,6 +4,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 var _exportNames = {
+  getPlatformsFromConfig: true,
   getConfig: true,
   getPackageJson: true,
   getConfigFilePaths: true,
@@ -19,6 +20,7 @@ exports.getConfigFilePaths = getConfigFilePaths;
 exports.getDefaultTarget = getDefaultTarget;
 exports.getNameFromConfig = getNameFromConfig;
 exports.getPackageJson = getPackageJson;
+exports.getPlatformsFromConfig = getPlatformsFromConfig;
 exports.getProjectConfigDescription = getProjectConfigDescription;
 exports.getProjectConfigDescriptionWithPaths = getProjectConfigDescriptionWithPaths;
 exports.getWebOutputPath = getWebOutputPath;
@@ -162,10 +164,26 @@ function getSupportedPlatforms(projectRoot) {
   if ((0, _requireUtils().resolveFrom)(projectRoot, 'react-native/package.json')) {
     platforms.push('ios', 'android');
   }
+  if ((0, _requireUtils().resolveFrom)(projectRoot, 'react-native-tvos/package.json')) {
+    platforms.push('tvos');
+  }
+  if ((0, _requireUtils().resolveFrom)(projectRoot, 'react-native-macos/package.json')) {
+    platforms.push('macos');
+  }
   if ((0, _requireUtils().resolveFrom)(projectRoot, 'react-dom/package.json')) {
     platforms.push('web');
   }
   return platforms;
+}
+
+/**
+ * Resolves the platforms a project targets: the explicit `platforms` from the config, falling back
+ * to the auto-detected supported platforms when unset. Returns the widened `Platform[]` type so
+ * callers don't need to cast around the narrower (generated) `ExpoConfig['platforms']` type, which
+ * doesn't yet model out-of-tree platforms (tvos/macos).
+ */
+function getPlatformsFromConfig(projectRoot, exp) {
+  return exp.platforms ?? getSupportedPlatforms(projectRoot);
 }
 
 /**
@@ -511,10 +529,10 @@ function ensureConfigHasDefaultValues({
   } catch (error) {
     if (!skipSDKVersionRequirement) throw error;
   }
-  let platforms = exp.platforms;
-  if (!platforms) {
-    platforms = getSupportedPlatforms(projectRoot);
-  }
+
+  // `getPlatformsFromConfig` can return tvos/macos, which the generated `platforms` type doesn't
+  // model yet. The runtime values are kept; the cast satisfies the narrower config-types type.
+  const platforms = getPlatformsFromConfig(projectRoot, exp);
   return {
     exp: {
       ...expWithDefaults,

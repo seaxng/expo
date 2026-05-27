@@ -1,4 +1,11 @@
-import type { ConfigFilePaths, ExpoConfig, GetConfigOptions, PackageJSONConfig, ProjectConfig, ProjectTarget, WriteConfigOptions } from './Config.types';
+import type { ConfigFilePaths, ExpoConfig, GetConfigOptions, PackageJSONConfig, Platform, ProjectConfig, ProjectTarget, WriteConfigOptions } from './Config.types';
+/**
+ * Resolves the platforms a project targets: the explicit `platforms` from the config, falling back
+ * to the auto-detected supported platforms when unset. Returns the widened `Platform[]` type so
+ * callers don't need to cast around the narrower (generated) `ExpoConfig['platforms']` type, which
+ * doesn't yet model out-of-tree platforms (tvos/macos).
+ */
+export declare function getPlatformsFromConfig(projectRoot: string, exp: Pick<ExpoConfig, 'platforms'>): Platform[];
 /**
  * Evaluate the config for an Expo project.
  * If a function is exported from the `app.config.js` then a partial config will be passed as an argument.
