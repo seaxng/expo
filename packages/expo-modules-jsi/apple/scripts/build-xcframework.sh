@@ -225,7 +225,36 @@ build_slice() {
   local headers_dir="${staging_dir}/${PACKAGE_NAME}.framework/Headers"
   mkdir -p "$headers_dir"
   cp "${generated_maps}/${PACKAGE_NAME}-Swift.h" "$headers_dir/"
-  cp "${generated_maps}/${PACKAGE_NAME}.modulemap" "$headers_dir/module.modulemap"
+
+  # Public C++ headers — every file under `Sources/${PACKAGE_NAME}-Cxx/include/Public/`
+  # is shipped in the framework's `Headers/` directory and consumable from external
+  # ObjC++ via `#import <${PACKAGE_NAME}/Header.h>`. They live in a `requires cplusplus`
+  # submodule so Swift consumers don't try to import them.
+  local public_cxx_dir="${PACKAGE_DIR}/Sources/${PACKAGE_NAME}-Cxx/include/Public"
+  local public_cxx_headers=()
+  while IFS= read -r -d '' file; do
+    public_cxx_headers+=("$(basename "$file")")
+  done < <(find "$public_cxx_dir" -maxdepth 1 -name '*.h' -print0)
+  for header in "${public_cxx_headers[@]}"; do
+    cp "${public_cxx_dir}/${header}" "$headers_dir/"
+  done
+
+  # Custom modulemap: keeps the Swift-generated header as the main module and
+  # exposes the public C++ headers as a `requires cplusplus` submodule.
+  {
+    echo "module ${PACKAGE_NAME} {"
+    echo "  header \"${PACKAGE_NAME}-Swift.h\""
+    echo "  export *"
+    echo ""
+    echo "  explicit module Cxx {"
+    echo "    requires cplusplus"
+    for header in "${public_cxx_headers[@]}"; do
+      echo "    header \"${header}\""
+    done
+    echo "    export *"
+    echo "  }"
+    echo "}"
+  } > "${headers_dir}/module.modulemap"
 
   echo "$current_hash" > "${staging_dir}/.build-hash"
 

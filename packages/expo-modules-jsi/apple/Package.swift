@@ -124,6 +124,11 @@ let package = Package(
       name: "ExpoModulesJSI-Cxx",
       dependencies: [],
       cxxSettings: [
+        // Headers under `include/Public/` are shipped with the xcframework and
+        // consumable from outside the package. Adding this search path lets in-package
+        // code include them by basename (e.g. `#include "NativeState.h"`), which also
+        // matches how external consumers import them via `<ExpoModulesJSI/NativeState.h>`.
+        .headerSearchPath("include/Public"),
         .unsafeFlags(cxxIncludeFlags),
       ],
     ),
