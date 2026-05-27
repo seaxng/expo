@@ -177,10 +177,10 @@ function getSupportedPlatforms(projectRoot) {
 }
 
 /**
- * Resolves the platforms a project targets: the explicit `platforms` from the config, falling back
- * to the auto-detected supported platforms when unset. Returns the widened `Platform[]` type so
- * callers don't need to cast around the narrower (generated) `ExpoConfig['platforms']` type, which
- * doesn't yet model out-of-tree platforms (tvos/macos).
+ * Resolves the platforms a project targets, as configured or detected.
+ *
+ * @param projectRoot
+ * @param exp
  */
 function getPlatformsFromConfig(projectRoot, exp) {
   return exp.platforms ?? getSupportedPlatforms(projectRoot);
@@ -530,8 +530,7 @@ function ensureConfigHasDefaultValues({
     if (!skipSDKVersionRequirement) throw error;
   }
 
-  // `getPlatformsFromConfig` can return tvos/macos, which the generated `platforms` type doesn't
-  // model yet. The runtime values are kept; the cast satisfies the narrower config-types type.
+  // TODO(@kitten): Remove once platforms are updated in XDL schema
   const platforms = getPlatformsFromConfig(projectRoot, exp);
   return {
     exp: {
